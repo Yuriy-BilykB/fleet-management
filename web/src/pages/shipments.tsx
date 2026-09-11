@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import { assignShipmentSchema, shipmentSchema, type AssignShipmentFormValues, type ShipmentFormValues } from '@/lib/schemas'
 import { Plus, UserPlus } from 'lucide-react'
 import { useMutation } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
@@ -26,43 +26,12 @@ import type { Columns } from '@/components/common/data-table'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 
-const schema = z
-  .object({
-    customerId: z.uuid('Pick a customer'),
-    reference: z.string().min(1, 'Reference is required').max(32),
-    originAddress: z.string().min(1, 'Origin is required').max(400),
-    destinationAddress: z.string().min(1, 'Destination is required').max(400),
-    cargoDescription: z.string().min(1, 'Describe the cargo').max(1000),
-    weightKg: z.number().min(0).max(100000),
-    price: z.number().min(0).nullable(),
-    currency: z.string().length(3, 'Use a 3-letter code'),
-    pickupDate: z.string().min(1, 'Pickup date is required'),
-    deliveryDate: z.string().nullable(),
-    status: z.enum(SHIPMENT_STATUSES),
-    notes: z.string().max(1000).nullable(),
-  })
-  .refine(
-    (v) => !v.deliveryDate || new Date(v.deliveryDate) >= new Date(v.pickupDate),
-    { path: ['deliveryDate'], message: 'Delivery cannot be before pickup' },
-  )
-
-type FormValues = z.infer<typeof schema>
-
-const EMPTY: FormValues = {
+const EMPTY: ShipmentFormValues = {
   customerId: '' as never, reference: '', originAddress: '', destinationAddress: '',
   cargoDescription: '', weightKg: 0, price: null, currency: 'UAH',
   pickupDate: toDateTimeInput(new Date().toISOString()), deliveryDate: null,
   status: 'Draft', notes: null,
 }
-
-const assignSchema = z.object({
-  driverId: z.uuid('Pick a driver'),
-  truckId: z.uuid('Pick a truck'),
-  startedAt: z.string().nullable(),
-  notes: z.string().max(1000).nullable(),
-})
-
-type AssignValues = z.infer<typeof assignSchema>
 
 export function ShipmentsPage() {
   const { companyId } = useCompany()
@@ -102,14 +71,14 @@ export function ShipmentsPage() {
   const update = shipments.useUpdate()
   const remove = shipments.useRemove()
 
-  const form = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: EMPTY })
-  const assignForm = useForm<AssignValues>({
-    resolver: zodResolver(assignSchema),
+  const form = useForm<ShipmentFormValues>({ resolver: zodResolver(shipmentSchema), defaultValues: EMPTY })
+  const assignForm = useForm<AssignShipmentFormValues>({
+    resolver: zodResolver(assignShipmentSchema),
     defaultValues: { driverId: '' as never, truckId: '' as never, startedAt: null, notes: null },
   })
 
   const assign = useMutation({
-    mutationFn: (input: { shipmentId: string; body: AssignValues }) =>
+    mutationFn: (input: { shipmentId: string; body: AssignShipmentFormValues }) =>
       api.post<Trip>(`/shipments/${input.shipmentId}/assign`, {
         ...input.body,
         startedAt: input.body.startedAt ? fromDateTimeInput(input.body.startedAt) : null,

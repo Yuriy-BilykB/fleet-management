@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import { driverSchema, type DriverFormValues } from '@/lib/schemas'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/common/page-header'
@@ -19,22 +19,7 @@ import { formatDate } from '@/lib/format'
 import { DRIVER_STATUSES, type Driver, type DriverStatus } from '@/types/api'
 import type { Columns } from '@/components/common/data-table'
 
-const schema = z.object({
-  firstName: z.string().min(1, 'First name is required').max(100),
-  lastName: z.string().min(1, 'Last name is required').max(100),
-  phone: z.string().max(32).nullable(),
-  email: z.email('Invalid email').max(200).nullable(),
-  licenseNumber: z.string().min(1, 'License number is required').max(64),
-  licenseExpiry: z.string().nullable(),
-  hiredOn: z.string().nullable(),
-  status: z.enum(DRIVER_STATUSES),
-  assignedTruckId: z.uuid().nullable(),
-  notes: z.string().max(1000).nullable(),
-})
-
-type FormValues = z.infer<typeof schema>
-
-const EMPTY: FormValues = {
+const EMPTY: DriverFormValues = {
   firstName: '', lastName: '', phone: null, email: null, licenseNumber: '',
   licenseExpiry: null, hiredOn: null, status: 'Active', assignedTruckId: null, notes: null,
 }
@@ -63,7 +48,7 @@ export function DriversPage() {
   const update = drivers.useUpdate()
   const remove = drivers.useRemove()
 
-  const form = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: EMPTY })
+  const form = useForm<DriverFormValues>({ resolver: zodResolver(driverSchema), defaultValues: EMPTY })
 
   function openCreate() {
     setEditing(null)

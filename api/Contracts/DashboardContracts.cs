@@ -30,3 +30,6 @@ public record DashboardResponse(
     IReadOnlyList<TripResponse> ActiveTrips,
     IReadOnlyList<ShipmentResponse> UpcomingShipments,
     IReadOnlyList<DocumentResponse> ExpiringDocuments);
+
+/// <summary>One month of service spend. <paramref name="Month"/> is "yyyy-MM".</summary>
+public record ServiceSpendPoint(string Month, decimal Total);

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import { companySchema, type CompanyFormValues } from '@/lib/schemas'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/common/page-header'
@@ -15,17 +15,7 @@ import { formatDate } from '@/lib/format'
 import type { Columns } from '@/components/common/data-table'
 import type { Company } from '@/types/api'
 
-const schema = z.object({
-  name: z.string().min(1, 'Name is required').max(200),
-  taxId: z.string().max(32).nullable(),
-  address: z.string().max(400).nullable(),
-  phone: z.string().max(32).nullable(),
-  email: z.email('Invalid email').max(200).nullable().or(z.literal(null)),
-})
-
-type FormValues = z.infer<typeof schema>
-
-const EMPTY: FormValues = { name: '', taxId: null, address: null, phone: null, email: null }
+const EMPTY: CompanyFormValues = { name: '', taxId: null, address: null, phone: null, email: null }
 
 export function CompaniesPage() {
   const state = useListState()
@@ -39,7 +29,7 @@ export function CompaniesPage() {
   const update = companies.useUpdate()
   const remove = companies.useRemove()
 
-  const form = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: EMPTY })
+  const form = useForm<CompanyFormValues>({ resolver: zodResolver(companySchema), defaultValues: EMPTY })
 
   function openCreate() {
     setEditing(null)

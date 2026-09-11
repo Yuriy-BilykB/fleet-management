@@ -149,6 +149,12 @@ export type DocumentRecord = {
   createdAt: string
 }
 
+export type ServiceSpendPoint = {
+  /** "yyyy-MM" */
+  month: string
+  total: number
+}
+
 export type Dashboard = {
   trucks: { total: number; available: number; onTrip: number; inService: number; expiringDocuments: number }
   drivers: { total: number; active: number; onTrip: number; expiringLicenses: number }

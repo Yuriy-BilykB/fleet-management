@@ -2,7 +2,7 @@
 
 Internal web app for a logistics company: fleet, drivers, customers and shipments.
 
-- **api/** — ASP.NET Core (.NET 10) minimal API, EF Core + Npgsql
+- **api/** — ASP.NET Core (.NET 10) controllers + services, EF Core + Npgsql
 - **web/** — React 19 + TypeScript (Vite), served by nginx in Docker
   — TanStack Query · Axios · React Router · shadcn/ui + Tailwind v4 ·
   React Hook Form + Zod · TanStack Table · Recharts · Lucide
@@ -91,6 +91,7 @@ Plus:
 | Method | Path | Description |
 | --- | --- | --- |
 | GET | `/api/dashboard?companyId=` | Fleet / driver / shipment counters, active trips, upcoming shipments, expiring documents |
+| GET | `/api/dashboard/service-spend?companyId=&months=6` | Service cost per month, aggregated with `GROUP BY` in Postgres; months with no work come back as zero. `months` is clamped to 1–36 |
 | PUT | `/api/drivers/{id}/truck` | Assign or unassign (`{"truckId": null}`) a driver's truck |
 | POST | `/api/shipments/{id}/assign` | Assign driver + truck — creates the `Trip` and moves a Draft shipment to Scheduled |
 | GET | `/api/shipments/{id}/trips` | Trips for one shipment |
@@ -158,7 +159,9 @@ api/
     AppDbContext.cs
     Configurations/   one IEntityTypeConfiguration per entity
   Contracts/      request/response DTOs with validation attributes
-  Endpoints/      one endpoint group per resource
+  Services/       one interface + implementation per resource — all the logic
+  Controllers/    thin HTTP layer, one per resource
+  Common/         ServiceResult, paging and save-conflict helpers
   Migrations/
 web/src/
   types/api.ts    TypeScript mirror of the API contracts
@@ -171,9 +174,25 @@ web/src/
   pages/          one page per resource
 ```
 
+### Request flow
+
+```
+Controller  → validates the DTO ([ApiController] does this automatically),
+               calls the service, maps ServiceResult onto a status code
+Service     → all the rules: reference checks, cross-company guards,
+               status transitions. Knows nothing about HTTP.
+AppDbContext → EF Core, which is already the repository + unit of work
+```
+
+Services return `ServiceResult` / `ServiceResult<T>` carrying `Success`,
+`NotFound`, `Invalid` or `Conflict`. `ApiControllerBase` is the only place that
+turns those into 200 / 404 / 400 / 409, so services stay testable without a web
+host.
+
 To add a resource: entity in `Domain/`, config in `Data/Configurations/`, a `DbSet`
-in `AppDbContext`, DTOs in `Contracts/`, an endpoint group in `Endpoints/`, then map
-it in [api/Program.cs](api/Program.cs) and add a migration. On the web side, add the
+in `AppDbContext`, DTOs in `Contracts/`, an `IFooService` + `FooService` in
+`Services/`, a controller in `Controllers/`, then register the service in
+[api/Program.cs](api/Program.cs) and add a migration. On the web side, add the
 type to [web/src/types/api.ts](web/src/types/api.ts), a line in
 [web/src/hooks/use-resources.ts](web/src/hooks/use-resources.ts), and a page modelled
 on [web/src/pages/trucks.tsx](web/src/pages/trucks.tsx).

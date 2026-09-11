@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import { tripSchema, type TripFormValues } from '@/lib/schemas'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/common/page-header'
@@ -19,26 +19,7 @@ import { formatDateTime, formatMoney, formatNumber, fromDateTimeInput, toDateTim
 import { TRIP_STATUSES, type Trip, type TripStatus } from '@/types/api'
 import type { Columns } from '@/components/common/data-table'
 
-const schema = z
-  .object({
-    shipmentId: z.uuid('Pick a shipment'),
-    driverId: z.uuid('Pick a driver'),
-    truckId: z.uuid('Pick a truck'),
-    startedAt: z.string().nullable(),
-    completedAt: z.string().nullable(),
-    distanceKm: z.number().min(0).nullable(),
-    fuelCost: z.number().min(0).nullable(),
-    status: z.enum(TRIP_STATUSES),
-    notes: z.string().max(1000).nullable(),
-  })
-  .refine(
-    (v) => !v.completedAt || !v.startedAt || new Date(v.completedAt) >= new Date(v.startedAt),
-    { path: ['completedAt'], message: 'Completion cannot be before the start' },
-  )
-
-type FormValues = z.infer<typeof schema>
-
-const EMPTY: FormValues = {
+const EMPTY: TripFormValues = {
   shipmentId: '' as never, driverId: '' as never, truckId: '' as never,
   startedAt: null, completedAt: null, distanceKm: null, fuelCost: null,
   status: 'Planned', notes: null,
@@ -101,7 +82,7 @@ export function TripsPage() {
   const update = trips.useUpdate()
   const remove = trips.useRemove()
 
-  const form = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: EMPTY })
+  const form = useForm<TripFormValues>({ resolver: zodResolver(tripSchema), defaultValues: EMPTY })
 
   function openCreate() {
     setEditing(null)

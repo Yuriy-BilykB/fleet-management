@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import { truckServiceSchema, type TruckServiceFormValues } from '@/lib/schemas'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -19,22 +19,7 @@ import { formatDate, formatMoney, formatNumber, humanize } from '@/lib/format'
 import { SERVICE_TYPES, type ServiceType, type TruckServiceRecord } from '@/types/api'
 import type { Columns } from '@/components/common/data-table'
 
-const schema = z.object({
-  truckId: z.uuid('Pick a truck'),
-  type: z.enum(SERVICE_TYPES),
-  description: z.string().min(1, 'Describe the work').max(1000),
-  serviceDate: z.string().min(1, 'Service date is required'),
-  cost: z.number().min(0),
-  currency: z.string().length(3, 'Use a 3-letter code'),
-  odometerKm: z.number().int().min(0).nullable(),
-  provider: z.string().max(200).nullable(),
-  nextServiceDate: z.string().nullable(),
-  notes: z.string().max(1000).nullable(),
-})
-
-type FormValues = z.infer<typeof schema>
-
-const EMPTY: FormValues = {
+const EMPTY: TruckServiceFormValues = {
   truckId: '' as never, type: 'Maintenance', description: '',
   serviceDate: new Date().toISOString().slice(0, 10), cost: 0, currency: 'UAH',
   odometerKm: null, provider: null, nextServiceDate: null, notes: null,
@@ -64,7 +49,7 @@ export function TruckServicesPage() {
   const update = truckServices.useUpdate()
   const remove = truckServices.useRemove()
 
-  const form = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: EMPTY })
+  const form = useForm<TruckServiceFormValues>({ resolver: zodResolver(truckServiceSchema), defaultValues: EMPTY })
 
   function openCreate() {
     setEditing(null)

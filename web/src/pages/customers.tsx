@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import { customerSchema, type CustomerFormValues } from '@/lib/schemas'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -18,20 +18,7 @@ import { customers, type CustomerBody } from '@/hooks/use-resources'
 import type { Columns } from '@/components/common/data-table'
 import type { Customer } from '@/types/api'
 
-const schema = z.object({
-  name: z.string().min(1, 'Name is required').max(200),
-  taxId: z.string().max(32).nullable(),
-  contactPerson: z.string().max(200).nullable(),
-  phone: z.string().max(32).nullable(),
-  email: z.email('Invalid email').max(200).nullable(),
-  address: z.string().max(400).nullable(),
-  notes: z.string().max(1000).nullable(),
-  isActive: z.boolean(),
-})
-
-type FormValues = z.infer<typeof schema>
-
-const EMPTY: FormValues = {
+const EMPTY: CustomerFormValues = {
   name: '', taxId: null, contactPerson: null, phone: null,
   email: null, address: null, notes: null, isActive: true,
 }
@@ -54,7 +41,7 @@ export function CustomersPage() {
   const update = customers.useUpdate()
   const remove = customers.useRemove()
 
-  const form = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: EMPTY })
+  const form = useForm<CustomerFormValues>({ resolver: zodResolver(customerSchema), defaultValues: EMPTY })
 
   function openCreate() {
     setEditing(null)

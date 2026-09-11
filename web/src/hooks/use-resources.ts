@@ -2,7 +2,8 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { createCrudHooks } from '@/hooks/use-crud'
 import type {
-  Company, Customer, Dashboard, Driver, Shipment, Trip, Truck, TruckServiceRecord,
+  Company, Customer, Dashboard, Driver, ServiceSpendPoint, Shipment, Trip, Truck,
+  TruckServiceRecord,
 } from '@/types/api'
 
 export const companies = createCrudHooks<Company, CompanyBody>('companies')
@@ -17,6 +18,19 @@ export function useDashboard(companyId: string | null) {
   return useQuery({
     queryKey: ['dashboard', companyId],
     queryFn: ({ signal }) => api.get<Dashboard>('/dashboard', { params: { companyId }, signal }),
+    enabled: Boolean(companyId),
+  })
+}
+
+/** Monthly service spend, aggregated by Postgres rather than in the browser. */
+export function useServiceSpend(companyId: string | null, months = 6) {
+  return useQuery({
+    queryKey: ['dashboard', 'service-spend', companyId, months],
+    queryFn: ({ signal }) =>
+      api.get<ServiceSpendPoint[]>('/dashboard/service-spend', {
+        params: { companyId, months },
+        signal,
+      }),
     enabled: Boolean(companyId),
   })
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import { truckSchema, type TruckFormValues } from '@/lib/schemas'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/common/page-header'
@@ -19,23 +19,7 @@ import { formatDate, formatNumber } from '@/lib/format'
 import { TRUCK_STATUSES, type Truck, type TruckStatus } from '@/types/api'
 import type { Columns } from '@/components/common/data-table'
 
-const schema = z.object({
-  plateNumber: z.string().min(1, 'Plate number is required').max(16),
-  make: z.string().min(1, 'Make is required').max(64),
-  model: z.string().min(1, 'Model is required').max(64),
-  vin: z.string().max(32).nullable(),
-  year: z.number().int().min(1900).max(2100).nullable(),
-  capacityKg: z.number().min(0, 'Must be 0 or more').max(100000),
-  odometerKm: z.number().int().min(0, 'Must be 0 or more'),
-  status: z.enum(TRUCK_STATUSES),
-  insuranceExpiry: z.string().nullable(),
-  inspectionExpiry: z.string().nullable(),
-  notes: z.string().max(1000).nullable(),
-})
-
-type FormValues = z.infer<typeof schema>
-
-const EMPTY: FormValues = {
+const EMPTY: TruckFormValues = {
   plateNumber: '', make: '', model: '', vin: null, year: null,
   capacityKg: 0, odometerKm: 0, status: 'Available',
   insuranceExpiry: null, inspectionExpiry: null, notes: null,
@@ -56,7 +40,7 @@ export function TrucksPage() {
   const update = trucks.useUpdate()
   const remove = trucks.useRemove()
 
-  const form = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: EMPTY })
+  const form = useForm<TruckFormValues>({ resolver: zodResolver(truckSchema), defaultValues: EMPTY })
 
   function openCreate() {
     setEditing(null)

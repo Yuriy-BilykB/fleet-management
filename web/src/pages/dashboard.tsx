@@ -10,7 +10,7 @@ import { StatusBadge } from '@/components/common/status-badge'
 import { NeedsCompany } from '@/components/common/needs-company'
 import { CategoryBars, ChartCard, SpendTrend, type CategoryDatum } from '@/components/common/charts'
 import { useCompany } from '@/hooks/use-company'
-import { truckServices, useDashboard } from '@/hooks/use-resources'
+import { useDashboard, useServiceSpend } from '@/hooks/use-resources'
 import { formatDate, formatDateTime, formatMoney, humanize } from '@/lib/format'
 
 const MONTHS_SHOWN = 6
@@ -19,28 +19,20 @@ export function DashboardPage() {
   const { companyId, company } = useCompany()
   const { data, isLoading } = useDashboard(companyId)
 
-  const services = truckServices.useList({ companyId, pageSize: 200 }, Boolean(companyId))
+  // Aggregated by Postgres — the client only turns "yyyy-MM" into a short label.
+  const serviceSpend = useServiceSpend(companyId, MONTHS_SHOWN)
 
-  const spend = useMemo(() => {
-    const buckets = new Map<string, number>()
-    const now = new Date()
-
-    for (let i = MONTHS_SHOWN - 1; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-      buckets.set(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, 0)
-    }
-
-    for (const record of services.data?.items ?? []) {
-      const key = record.serviceDate.slice(0, 7)
-      if (buckets.has(key)) buckets.set(key, (buckets.get(key) ?? 0) + record.cost)
-    }
-
-    return [...buckets.entries()].map(([key, value]) => {
-      const [year, month] = key.split('-')
-      const label = new Date(Number(year), Number(month) - 1).toLocaleDateString('en', { month: 'short' })
-      return { label, value }
-    })
-  }, [services.data])
+  const spend = useMemo(
+    () =>
+      (serviceSpend.data ?? []).map((point) => {
+        const [year, month] = point.month.split('-')
+        return {
+          label: new Date(Number(year), Number(month) - 1).toLocaleDateString('en', { month: 'short' }),
+          value: point.total,
+        }
+      }),
+    [serviceSpend.data],
+  )
 
   if (!companyId) return <NeedsCompany />
 
