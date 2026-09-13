@@ -9,16 +9,17 @@ import type { RowData } from '@tanstack/react-table'
 import type { Paged } from '@/types/api'
 
 interface ListShellProps<T extends RowData> {
-  state: ListState
+  listState: ListState
   query: { data?: Paged<T>; isLoading: boolean; isError: boolean; error: unknown }
   columns: Columns<T>
   searchPlaceholder?: string
   emptyMessage?: string
   filters?: ReactNode
+  onRowClick?: (row: T) => void
 }
 
 export function ListShell<T extends RowData>({
-  state, query, columns, searchPlaceholder, emptyMessage, filters,
+  listState, query, columns, searchPlaceholder, emptyMessage, filters, onRowClick,
 }: ListShellProps<T>) {
   const page = query.data
 
@@ -29,18 +30,18 @@ export function ListShell<T extends RowData>({
           <div className="relative min-w-[220px] flex-1">
             <Search className="text-muted-foreground pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2" />
             <Input
-              value={state.search}
-              onChange={(e) => state.setSearch(e.target.value)}
+              value={listState.search}
+              onChange={(e) => listState.setSearch(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault()
-                  state.submitSearch()
+                  listState.submitSearch()
                 }
               }}
               placeholder={searchPlaceholder}
               className="ps-9 pe-9"
             />
-            {state.isSearching && (
+            {listState.isSearching && (
               <Loader2 className="text-muted-foreground pointer-events-none absolute end-3 top-1/2 size-4 -translate-y-1/2 animate-spin" />
             )}
           </div>
@@ -58,16 +59,17 @@ export function ListShell<T extends RowData>({
           data={page?.items ?? []}
           isLoading={query.isLoading}
           emptyMessage={emptyMessage}
+          onRowClick={onRowClick}
         />
       )}
 
       <Pagination
-        page={page?.page ?? state.page}
-        pageSize={page?.pageSize ?? state.pageSize}
+        page={page?.page ?? listState.page}
+        pageSize={page?.pageSize ?? listState.pageSize}
         total={page?.total ?? 0}
         totalPages={page?.totalPages ?? 0}
-        onPageChange={state.setPage}
-        onPageSizeChange={state.setPageSize}
+        onPageChange={listState.setPage}
+        onPageSizeChange={listState.setPageSize}
       />
     </Card>
   )

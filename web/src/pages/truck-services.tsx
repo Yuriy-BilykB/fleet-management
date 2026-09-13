@@ -27,14 +27,14 @@ const EMPTY: TruckServiceFormValues = {
 
 export function TruckServicesPage() {
   const { companyId } = useCompany()
-  const state = useListState()
+  const listState = useListState()
   const [type, setType] = useState<string | null>(null)
   const [truckId, setTruckId] = useState<string | null>(null)
   const [editing, setEditing] = useState<TruckServiceRecord | null>(null)
   const [open, setOpen] = useState(false)
 
   const query = truckServices.useList(
-    { companyId, type, truckId, page: state.page, pageSize: state.pageSize },
+    { companyId, type, truckId, page: listState.page, pageSize: listState.pageSize },
     Boolean(companyId),
   )
   const truckList = trucks.useList({ companyId, pageSize: 200 }, Boolean(companyId))
@@ -148,7 +148,7 @@ export function TruckServicesPage() {
       </PageHeader>
 
       <ListShell
-        state={state}
+        listState={listState}
         query={query}
         columns={columns}
         emptyMessage="No service records match these filters."

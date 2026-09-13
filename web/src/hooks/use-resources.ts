@@ -2,8 +2,8 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { createCrudHooks } from '@/hooks/use-crud'
 import type {
-  Company, Customer, Dashboard, Driver, ServiceSpendPoint, Shipment, Trip, Truck,
-  TruckServiceRecord,
+  Company, Customer, Dashboard, DocumentRecord, Driver, ServiceSpendPoint, Shipment,
+  Trip, Truck, TruckServiceRecord,
 } from '@/types/api'
 
 export const companies = createCrudHooks<Company, CompanyBody>('companies')
@@ -13,6 +13,7 @@ export const customers = createCrudHooks<Customer, CustomerBody>('customers')
 export const shipments = createCrudHooks<Shipment, ShipmentBody>('shipments')
 export const trips = createCrudHooks<Trip, TripBody>('trips')
 export const truckServices = createCrudHooks<TruckServiceRecord, TruckServiceBody>('truck-services')
+export const documents = createCrudHooks<DocumentRecord, DocumentBody>('documents')
 
 export function useDashboard(companyId: string | null) {
   return useQuery({
@@ -74,6 +75,12 @@ export type TripBody = {
   shipmentId: string; driverId: string; truckId: string
   startedAt: string | null; completedAt: string | null
   distanceKm: number | null; fuelCost: number | null; status: string; notes: string | null
+}
+
+export type DocumentBody = {
+  ownerType: string; ownerId: string; type: string; title: string
+  number: string | null; fileUrl: string | null
+  issuedOn: string | null; expiresOn: string | null; notes: string | null
 }
 
 export type TruckServiceBody = {

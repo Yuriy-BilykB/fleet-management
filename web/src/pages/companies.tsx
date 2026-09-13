@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { companySchema, type CompanyFormValues } from '@/lib/schemas'
@@ -7,7 +8,6 @@ import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/common/page-header'
 import { ListShell } from '@/components/common/list-shell'
 import { ResourceSheet } from '@/components/common/resource-sheet'
-import { RowActions } from '@/components/common/row-actions'
 import { TextField } from '@/components/common/form'
 import { useListState } from '@/hooks/use-list-state'
 import { companies, type CompanyBody } from '@/hooks/use-resources'
@@ -18,31 +18,22 @@ import type { Company } from '@/types/api'
 const EMPTY: CompanyFormValues = { name: '', taxId: null, address: null, phone: null, email: null }
 
 export function CompaniesPage() {
-  const state = useListState()
+  const navigate = useNavigate()
+  const listState = useListState()
   const [editing, setEditing] = useState<Company | null>(null)
   const [open, setOpen] = useState(false)
 
   const query = companies.useList({
-    page: state.page, pageSize: state.pageSize, search: state.debouncedSearch,
+    page: listState.page, pageSize: listState.pageSize, search: listState.debouncedSearch,
   })
   const create = companies.useCreate()
   const update = companies.useUpdate()
-  const remove = companies.useRemove()
 
   const form = useForm<CompanyFormValues>({ resolver: zodResolver(companySchema), defaultValues: EMPTY })
 
   function openCreate() {
     setEditing(null)
     form.reset(EMPTY)
-    setOpen(true)
-  }
-
-  function openEdit(company: Company) {
-    setEditing(company)
-    form.reset({
-      name: company.name, taxId: company.taxId, address: company.address,
-      phone: company.phone, email: company.email,
-    })
     setOpen(true)
   }
 
@@ -58,19 +49,7 @@ export function CompaniesPage() {
     { accessorKey: 'taxId', header: 'Tax ID', cell: (c) => c.getValue<string>() ?? '—' },
     { accessorKey: 'phone', header: 'Phone', cell: (c) => c.getValue<string>() ?? '—' },
     { accessorKey: 'email', header: 'Email', cell: (c) => c.getValue<string>() ?? '—' },
-    { accessorKey: 'createdAt', header: 'Created', cell: (c) => formatDate(c.getValue<string>()) },
-    {
-      id: 'actions',
-      header: '',
-      enableSorting: false,
-      cell: (c) => (
-        <RowActions
-          onEdit={() => openEdit(c.row.original)}
-          onDelete={() => remove.mutate(c.row.original.id)}
-          deleteDescription="A company that still has trucks, drivers, customers or shipments cannot be deleted."
-        />
-      ),
-    },
+    { accessorKey: 'createdAt', header: 'Created', cell: (c) => formatDate(c.getValue<string>()) }
   ]
 
   return (
@@ -82,9 +61,10 @@ export function CompaniesPage() {
       </PageHeader>
 
       <ListShell
-        state={state}
+        listState={listState}
         query={query}
         columns={columns}
+        onRowClick={(company) => navigate(`/companies/${company.id}`)}
         searchPlaceholder="Search companies…"
         emptyMessage="No companies yet. Create one to start adding trucks and drivers."
       />

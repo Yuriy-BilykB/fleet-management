@@ -4,18 +4,20 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 
-const PAGE_SIZES = [25, 50, 100, 200]
+const pageSizes = [25, 50, 100, 200]
 
-export function Pagination({
-  page, pageSize, total, totalPages, onPageChange, onPageSizeChange,
-}: {
+interface PaginationProps {
   page: number
   pageSize: number
   total: number
   totalPages: number
   onPageChange: (page: number) => void
   onPageSizeChange: (size: number) => void
-}) {
+}
+
+export function Pagination({
+  page, pageSize, total, totalPages, onPageChange, onPageSizeChange,
+}: PaginationProps) {
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1
   const to = Math.min(page * pageSize, total)
 
@@ -27,7 +29,7 @@ export function Pagination({
 
       <div className="flex items-center gap-2">
         <Select
-          items={PAGE_SIZES.map((size) => ({ value: String(size), label: `${size} / page` }))}
+          items={pageSizes.map((size) => ({ value: String(size), label: `${size} / page` }))}
           value={String(pageSize)}
           onValueChange={(value) => onPageSizeChange(Number(value))}
         >
@@ -35,7 +37,7 @@ export function Pagination({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {PAGE_SIZES.map((size) => (
+            {pageSizes.map((size) => (
               <SelectItem key={size} value={String(size)}>
                 {size} / page
               </SelectItem>

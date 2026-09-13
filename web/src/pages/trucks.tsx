@@ -1,71 +1,37 @@
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { truckSchema, type TruckFormValues } from '@/lib/schemas'
+import { useNavigate } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/common/page-header'
 import { ListShell } from '@/components/common/list-shell'
-import { ResourceSheet } from '@/components/common/resource-sheet'
-import { RowActions } from '@/components/common/row-actions'
+import { TruckFormSheet } from '@/components/trucks/truck-form-sheet'
 import { FilterSelect } from '@/components/common/filter-select'
 import { NeedsCompany } from '@/components/common/needs-company'
 import { StatusBadge } from '@/components/common/status-badge'
-import { DateField, NumberField, SelectField, TextAreaField, TextField } from '@/components/common/form'
 import { useListState } from '@/hooks/use-list-state'
 import { useCompany } from '@/hooks/use-company'
-import { trucks, type TruckBody } from '@/hooks/use-resources'
+import { trucks } from '@/hooks/use-resources'
 import { formatDate, formatNumber } from '@/lib/format'
 import { TRUCK_STATUSES, type Truck, type TruckStatus } from '@/types/api'
 import type { Columns } from '@/components/common/data-table'
 
-const EMPTY: TruckFormValues = {
-  plateNumber: '', make: '', model: '', vin: null, year: null,
-  capacityKg: 0, odometerKm: 0, status: 'Available',
-  insuranceExpiry: null, inspectionExpiry: null, notes: null,
-}
-
 export function TrucksPage() {
   const { companyId } = useCompany()
-  const state = useListState()
+  const navigate = useNavigate()
+  const listState = useListState()
   const [status, setStatus] = useState<string | null>(null)
   const [editing, setEditing] = useState<Truck | null>(null)
   const [open, setOpen] = useState(false)
 
   const query = trucks.useList(
-    { companyId, status, page: state.page, pageSize: state.pageSize, search: state.debouncedSearch },
+    { companyId, status, page: listState.page, pageSize: listState.pageSize, search: listState.debouncedSearch },
     Boolean(companyId),
   )
-  const create = trucks.useCreate()
-  const update = trucks.useUpdate()
-  const remove = trucks.useRemove()
-
-  const form = useForm<TruckFormValues>({ resolver: zodResolver(truckSchema), defaultValues: EMPTY })
 
   function openCreate() {
     setEditing(null)
-    form.reset(EMPTY)
     setOpen(true)
   }
-
-  function openEdit(truck: Truck) {
-    setEditing(truck)
-    form.reset({
-      plateNumber: truck.plateNumber, make: truck.make, model: truck.model, vin: truck.vin,
-      year: truck.year, capacityKg: truck.capacityKg, odometerKm: truck.odometerKm,
-      status: truck.status, insuranceExpiry: truck.insuranceExpiry,
-      inspectionExpiry: truck.inspectionExpiry, notes: truck.notes,
-    })
-    setOpen(true)
-  }
-
-  const submit = form.handleSubmit((values) => {
-    if (!companyId) return
-    const body: TruckBody = { ...values, companyId }
-    const done = { onSuccess: () => setOpen(false) }
-    if (editing) update.mutate({ id: editing.id, body }, done)
-    else create.mutate(body, done)
-  })
 
   const columns: Columns<Truck> = [
     {
@@ -106,19 +72,7 @@ export function TrucksPage() {
       accessorKey: 'inspectionExpiry',
       header: 'Inspection',
       cell: (c) => <ExpiryCell value={c.getValue<string | null>()} />,
-    },
-    {
-      id: 'actions',
-      header: '',
-      enableSorting: false,
-      cell: (c) => (
-        <RowActions
-          onEdit={() => openEdit(c.row.original)}
-          onDelete={() => remove.mutate(c.row.original.id)}
-          deleteDescription="Service records and documents for this truck are deleted too. A truck used by a trip cannot be deleted."
-        />
-      ),
-    },
+    }
   ]
 
   if (!companyId) return <NeedsCompany />
@@ -132,9 +86,10 @@ export function TrucksPage() {
       </PageHeader>
 
       <ListShell
-        state={state}
+        listState={listState}
         query={query}
         columns={columns}
+        onRowClick={(truck) => navigate(`/trucks/${truck.id}`)}
         searchPlaceholder="Search plate, make or model…"
         emptyMessage="No trucks match these filters."
         filters={
@@ -148,25 +103,12 @@ export function TrucksPage() {
         }
       />
 
-      <ResourceSheet
+      <TruckFormSheet
         open={open}
         onOpenChange={setOpen}
-        title={editing ? `Edit ${editing.plateNumber}` : 'New truck'}
-        onSubmit={submit}
-        isPending={create.isPending || update.isPending}
-      >
-        <TextField control={form.control} name="plateNumber" label="Plate number" placeholder="AA1234BB" />
-        <SelectField control={form.control} name="status" label="Status" options={TRUCK_STATUSES} />
-        <TextField control={form.control} name="make" label="Make" placeholder="Volvo" />
-        <TextField control={form.control} name="model" label="Model" placeholder="FH16" />
-        <TextField control={form.control} name="vin" label="VIN" />
-        <NumberField control={form.control} name="year" label="Year" step="1" />
-        <NumberField control={form.control} name="capacityKg" label="Capacity (kg)" />
-        <NumberField control={form.control} name="odometerKm" label="Odometer (km)" step="1" />
-        <DateField control={form.control} name="insuranceExpiry" label="Insurance expires" />
-        <DateField control={form.control} name="inspectionExpiry" label="Inspection expires" />
-        <TextAreaField control={form.control} name="notes" label="Notes" className="col-span-2" />
-      </ResourceSheet>
+        truck={editing}
+        companyId={companyId}
+      />
     </>
   )
 }

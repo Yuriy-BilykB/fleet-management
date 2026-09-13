@@ -126,6 +126,13 @@ Pages: **Dashboard**, Trucks, Drivers, Customers, Shipments, Trips, Truck Servic
 and Companies. Every list page has the same shape — search + filters, a sortable
 table, a slide-out create/edit form, and a confirm dialog for deletes.
 
+Clicking a row opens that record's **detail page** (`/trucks/:id`, `/drivers/:id`,
+`/customers/:id`, `/shipments/:id`, `/trips/:id`, `/companies/:id`): a header card
+with a metric strip, tabs over the related records, an activity feed derived from
+those records, and a side rail with compliance dates and linked-record counts.
+The shared building blocks live in
+[web/src/components/detail/detail-shell.tsx](web/src/components/detail/detail-shell.tsx).
+
 Everything except Companies is scoped to the company picked in the header
 (remembered in `localStorage`), so create a company first. Shipments carry an extra
 **assign** action that picks a driver + truck and creates the trip.

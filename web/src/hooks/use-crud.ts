@@ -19,6 +19,14 @@ export function createCrudHooks<TEntity, TRequest>(resource: string) {
     })
   }
 
+  function useById(id: string | undefined): UseQueryResult<TEntity> {
+    return useQuery({
+      queryKey: [resource, 'byId', id],
+      queryFn: ({ signal }) => api.get<TEntity>(`${basePath}/${id}`, { signal }),
+      enabled: Boolean(id),
+    })
+  }
+
   function useInvalidate() {
     const queryClient = useQueryClient()
     return () => {
@@ -63,7 +71,7 @@ export function createCrudHooks<TEntity, TRequest>(resource: string) {
     })
   }
 
-  return { useList, useCreate, useUpdate, useRemove, listKey }
+  return { useList, useById, useCreate, useUpdate, useRemove, listKey }
 }
 
 /** Surfaces problem-details errors, including per-field validation messages. */
