@@ -6,14 +6,14 @@ import {
   DateField, NumberField, SelectField, TextAreaField, TextField,
 } from '@/components/common/form'
 import { shipmentSchema, type ShipmentFormValues } from '@/lib/schemas'
-import { customers, shipments, type ShipmentBody } from '@/hooks/use-resources'
+import { customers, locations, shipments, type ShipmentBody } from '@/hooks/use-resources'
 import { fromDateTimeInput, toDateTimeInput } from '@/lib/format'
 import { SHIPMENT_STATUSES, type Shipment } from '@/types/api'
 
 function emptyValues(): ShipmentFormValues {
   return {
     customerId: '' as never, reference: '', originAddress: '', destinationAddress: '',
-    cargoDescription: '', weightKg: 0, price: null, currency: 'UAH',
+    originLocationId: null, destinationLocationId: null, cargoDescription: '', weightKg: 0, price: null, currency: 'EUR',
     pickupDate: toDateTimeInput(new Date().toISOString()), deliveryDate: null,
     status: 'Draft', notes: null,
   }
@@ -25,6 +25,8 @@ function toFormValues(shipment: Shipment): ShipmentFormValues {
     reference: shipment.reference,
     originAddress: shipment.originAddress,
     destinationAddress: shipment.destinationAddress,
+    originLocationId: shipment.originLocationId,
+    destinationLocationId: shipment.destinationLocationId,
     cargoDescription: shipment.cargoDescription,
     weightKg: shipment.weightKg,
     price: shipment.price,
@@ -47,10 +49,18 @@ export function ShipmentFormSheet({
   const create = shipments.useCreate()
   const update = shipments.useUpdate()
   const customerList = customers.useList({ companyId, pageSize: 200 }, open)
+  const locationList = locations.useList({ pageSize: 200 }, open)
 
   const customerOptions = useMemo(
     () => (customerList.data?.items ?? []).map((c) => ({ value: c.id, label: c.name })),
     [customerList.data],
+  )
+
+  const locationOptions = useMemo(
+    () => (locationList.data?.items ?? []).map((l) => ({
+      value: l.id, label: `${l.name}, ${l.countryCode}`,
+    })),
+    [locationList.data],
   )
 
   const form = useForm<ShipmentFormValues>({
@@ -93,12 +103,29 @@ export function ShipmentFormSheet({
         placeholder={customerOptions.length ? 'Select customer' : 'No customers yet'}
         className="col-span-2"
       />
-      <TextField control={form.control} name="originAddress" label="Origin" className="col-span-2" />
-      <TextField control={form.control} name="destinationAddress" label="Destination" className="col-span-2" />
+      <SelectField
+        control={form.control}
+        name="originLocationId"
+        label="Origin city"
+        options={locationOptions}
+        allowEmpty
+        placeholder="Select city"
+        description="Used for the map and distances"
+      />
+      <SelectField
+        control={form.control}
+        name="destinationLocationId"
+        label="Destination city"
+        options={locationOptions}
+        allowEmpty
+        placeholder="Select city"
+      />
+      <TextField control={form.control} name="originAddress" label="Origin address" className="col-span-2" />
+      <TextField control={form.control} name="destinationAddress" label="Destination address" className="col-span-2" />
       <TextAreaField control={form.control} name="cargoDescription" label="Cargo" className="col-span-2" />
       <NumberField control={form.control} name="weightKg" label="Weight (kg)" />
       <NumberField control={form.control} name="price" label="Price" />
-      <TextField control={form.control} name="currency" label="Currency" placeholder="UAH" />
+      <TextField control={form.control} name="currency" label="Currency" placeholder="EUR" />
       <div />
       <DateField control={form.control} name="pickupDate" label="Pickup" withTime />
       <DateField control={form.control} name="deliveryDate" label="Delivery" withTime />

@@ -21,7 +21,7 @@ import type { Columns } from '@/components/common/data-table'
 
 const EMPTY: TruckServiceFormValues = {
   truckId: '' as never, type: 'Maintenance', description: '',
-  serviceDate: new Date().toISOString().slice(0, 10), cost: 0, currency: 'UAH',
+  serviceDate: new Date().toISOString().slice(0, 10), cost: 0, currency: 'EUR',
   odometerKm: null, provider: null, nextServiceDate: null, notes: null,
 }
 
@@ -192,7 +192,7 @@ export function TruckServicesPage() {
         <DateField control={form.control} name="serviceDate" label="Service date" />
         <TextAreaField control={form.control} name="description" label="Work done" className="col-span-2" />
         <NumberField control={form.control} name="cost" label="Cost" />
-        <TextField control={form.control} name="currency" label="Currency" placeholder="UAH" />
+        <TextField control={form.control} name="currency" label="Currency" placeholder="EUR" />
         <NumberField control={form.control} name="odometerKm" label="Odometer (km)" step="1" />
         <DateField control={form.control} name="nextServiceDate" label="Next due" />
         <TextField control={form.control} name="provider" label="Provider" className="col-span-2" />

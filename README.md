@@ -8,6 +8,8 @@ Internal web app for a logistics company: fleet, drivers, customers and shipment
   React Hook Form + Zod · TanStack Table · Recharts · Lucide
 - **db** — PostgreSQL 18
 
+Seed data is Danish/Nordic and priced in EUR; the UI formats with `en-GB`.
+
 ## Run with Docker Compose
 
 ```bash
@@ -91,6 +93,10 @@ Plus:
 | Method | Path | Description |
 | --- | --- | --- |
 | GET | `/api/dashboard?companyId=` | Fleet / driver / shipment counters, active trips, upcoming shipments, expiring documents |
+| GET | `/api/trips/{id}/track` | Road geometry, distance, drive time, waypoints, the truck id and its fixes within the trip's window |
+| GET/POST | `/api/shipments/{id}/stops` | Intermediate waypoints; `DELETE .../stops/{stopId}` removes one |
+| GET | `/api/locations` | City reference data (name, country, lat/lon) — full CRUD |
+| WS | `/hubs/trips` | SignalR hub; `JoinTruck(truckId)` subscribes to that truck's live positions |
 | GET | `/api/dashboard/service-spend?companyId=&months=6` | Service cost per month, aggregated with `GROUP BY` in Postgres; months with no work come back as zero. `months` is clamped to 1–36 |
 | PUT | `/api/drivers/{id}/truck` | Assign or unassign (`{"truckId": null}`) a driver's truck |
 | POST | `/api/shipments/{id}/assign` | Assign driver + truck — creates the `Trip` and moves a Draft shipment to Scheduled |
@@ -152,6 +158,39 @@ queries pass TanStack Query's `AbortSignal`, so superseded requests are cancelle
 
 Search is debounced (300 ms) via [use-debounced-value.ts](web/src/hooks/use-debounced-value.ts),
 so typing sends one request instead of one per keystroke; Enter skips the wait.
+
+### Live tracking
+
+A trip's **Live map** tab draws the planned route, the path covered so far and the
+truck's current position on OpenStreetMap tiles (Leaflet). Positions arrive over
+**SignalR** (`/hubs/trips`) — the initial track still comes from REST, so a dropped
+socket degrades to stale data rather than a blank map.
+
+Routes follow **real roads**. `RoutingService` asks OpenRouteService for the road
+geometry through a shipment's waypoints (origin → stops → destination) and caches
+the answer in `Routes`, keyed by the ordered location ids — so each distinct
+sequence costs one provider call, ever. Add stops on the shipment detail page and
+the key changes, which re-routes on the next load.
+
+Set `ORS_API_KEY` in `.env` (free key from openrouteservice.org). **Without it
+everything still works** — routes fall back to straight lines and the map says
+`Routing: straight line` instead of `road`.
+
+**Positions belong to trucks, not trips** (`TruckPositions`). Real telematics —
+the truck's factory unit reporting over mobile to the maker's cloud, read through
+an API such as ACEA's rFMS — sends fixes per vehicle around the clock and knows
+nothing about our trips. A trip's track is therefore the slice of its truck's fixes
+between `StartedAt` and `CompletedAt`, and progress along the route is *derived* by
+projecting the newest fix onto the geometry rather than stored: a feed reports a
+position, never a percentage. `Truck.ExternalId` holds the provider's vehicle id.
+
+There is no telematics hardware yet, so `TripSimulator` stands in for it and
+publishes the same shape a provider would (`Source = "simulator"`). It walks each
+**In Progress** trip's truck along the road geometry by distance, so the speed
+stays even, and stops writing once the truck arrives. Swapping in a real feed means
+replacing that one service — the table, the hub and the map stay as they are. It is off unless `Simulation:Enabled` is
+true (set in `appsettings.Development.json`, with `TickSeconds` and `RouteMinutes`).
+Never enable it against real data.
 
 **Sorting is client-side over the loaded page**, not the whole result set; paging
 and filtering are server-side. Raise the page size (up to 200) to sort across more

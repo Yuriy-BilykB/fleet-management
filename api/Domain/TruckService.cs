@@ -9,7 +9,7 @@ public class TruckService
     public string Description { get; set; } = null!;
     public DateOnly ServiceDate { get; set; }
     public decimal Cost { get; set; }
-    public string Currency { get; set; } = "UAH";
+    public string Currency { get; set; } = "EUR";
     public int? OdometerKm { get; set; }
     public string? Provider { get; set; }
     public DateOnly? NextServiceDate { get; set; }

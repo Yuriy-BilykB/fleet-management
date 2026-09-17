@@ -9,10 +9,12 @@ public class Shipment
     public string Reference { get; set; } = null!;
     public string OriginAddress { get; set; } = null!;
     public string DestinationAddress { get; set; } = null!;
+    public Guid? OriginLocationId { get; set; }
+    public Guid? DestinationLocationId { get; set; }
     public string CargoDescription { get; set; } = null!;
     public decimal WeightKg { get; set; }
     public decimal? Price { get; set; }
-    public string Currency { get; set; } = "UAH";
+    public string Currency { get; set; } = "EUR";
     public DateTimeOffset PickupDate { get; set; }
     public DateTimeOffset? DeliveryDate { get; set; }
     public ShipmentStatus Status { get; set; } = ShipmentStatus.Draft;
@@ -21,6 +23,9 @@ public class Shipment
 
     public Company Company { get; set; } = null!;
     public Customer Customer { get; set; } = null!;
+    public Location? OriginLocation { get; set; }
+    public Location? DestinationLocation { get; set; }
+    public ICollection<ShipmentStop> Stops { get; set; } = [];
     public ICollection<Trip> Trips { get; set; } = [];
     public ICollection<Document> Documents { get; set; } = [];
 }

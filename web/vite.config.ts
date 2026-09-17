@@ -17,6 +17,11 @@ export default defineConfig({
         target: process.env.VITE_PROXY_TARGET ?? 'http://localhost:5272',
         changeOrigin: true,
       },
+      '/hubs': {
+        target: process.env.VITE_PROXY_TARGET ?? 'http://localhost:5272',
+        changeOrigin: true,
+        ws: true,
+      },
     },
   },
 })

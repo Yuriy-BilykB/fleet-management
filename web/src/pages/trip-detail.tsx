@@ -11,10 +11,15 @@ import { useCompany } from '@/hooks/use-company'
 import {
   ActivityFeed, DetailBreadcrumb, DetailHeader, DetailLayout, DetailTabs,
   FieldGrid, RailCard, Section,
-  type ActivityItem, type Field, type Metric,
+  type ActivityItem, type DetailTab, type Field, type Metric, type RailItem,
 } from '@/components/detail/detail-shell'
-import { trips } from '@/hooks/use-resources'
+import { trips, useTripTrack } from '@/hooks/use-resources'
+import type { TripTrack, TruckPosition } from '@/types/api'
+import { useTruckLivePosition } from '@/hooks/use-trip-live-position'
+import { TripMap } from '@/components/map/trip-map'
+import { cn } from '@/lib/utils'
 import { formatDate, formatDateTime, formatMoney, formatNumber, humanize } from '@/lib/format'
+import { progressAlong } from '@/lib/polyline'
 
 /** Whole hours and minutes between two instants, or null while it is open. */
 function duration(startedAt: string | null, completedAt: string | null): string | null {
@@ -26,6 +31,47 @@ function duration(startedAt: string | null, completedAt: string | null): string 
   return `${hours}h ${String(minutes).padStart(2, '0')}m`
 }
 
+/** Minutes as "4h 42m"; blank when the provider gave no duration. */
+function formatMinutes(minutes: number | null | undefined): string {
+  if (!minutes) return '—'
+  return `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, '0')}m`
+}
+
+/** Right-hand rail on the map tab: where the truck is and how it was routed. */
+function buildTrackingItems(track: TripTrack | undefined, live: TruckPosition | null): RailItem[] {
+  // The live fix is fresher than anything already stored. Progress is derived by
+  // projecting it onto the route — a feed reports a position, never a percentage.
+  const newest = live ?? track?.positions.at(-1)
+  const progress =
+    newest && track && track.routeGeometry.length >= 2
+      ? progressAlong(track.routeGeometry, [newest.latitude, newest.longitude])
+      : null
+  const isRoadRoute = track?.routeProvider === 'openrouteservice'
+
+  return [
+    { label: 'Progress', value: progress != null ? `${Math.round(progress * 100)}%` : '—' },
+    { label: 'Speed', value: live?.speedKmh != null ? `${live.speedKmh} km/h` : '—' },
+    { label: 'Route', value: `${track?.originName ?? '—'} → ${track?.destinationName ?? '—'}` },
+    {
+      label: 'Road distance',
+      value: track?.routeDistanceKm != null ? `${formatNumber(track.routeDistanceKm)} km` : '—',
+    },
+    { label: 'Drive time', value: formatMinutes(track?.routeDurationMinutes) },
+    {
+      label: 'Routing',
+      value: isRoadRoute ? 'road' : 'straight line',
+      tone: isRoadRoute ? 'good' : 'warn',
+    },
+    { label: 'Fixes recorded', value: track?.positions.length ?? 0 },
+    { label: 'Last update', value: live ? formatDateTime(live.recordedAt) : '—' },
+  ]
+}
+
+const tripTabs: DetailTab[] = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'map', label: 'Live map' },
+]
+
 export function TripDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -36,6 +82,11 @@ export function TripDetailPage() {
   const tripQuery = trips.useById(id)
   const trip = tripQuery.data
   const remove = trips.useRemove()
+
+  const trackQuery = useTripTrack(id)
+  // Positions belong to the truck, so the feed is joined by truck, not trip.
+  const { position: livePosition, status: liveStatus } = useTruckLivePosition(trackQuery.data?.truckId)
+  const trackingItems = buildTrackingItems(trackQuery.data, livePosition)
 
   if (tripQuery.isLoading) {
     return (
@@ -68,7 +119,7 @@ export function TripDetailPage() {
     {
       label: 'Cost / km',
       value: costPerKm !== null ? costPerKm.toFixed(2) : '—',
-      sub: costPerKm !== null ? 'UAH per km' : 'needs distance + fuel',
+      sub: costPerKm !== null ? 'EUR per km' : 'needs distance + fuel',
     },
     { label: 'Started', value: trip.startedAt ? formatDate(trip.startedAt) : '—', sub: trip.startedAt ? formatDateTime(trip.startedAt).slice(-5) : 'not started' },
     { label: 'Duration', value: took ?? '—', sub: trip.completedAt ? 'completed' : 'in progress' },
@@ -174,10 +225,38 @@ export function TripDetailPage() {
         }
       />
 
-      <DetailTabs tabs={[{ id: 'overview', label: 'Overview' }]} value={tab} onChange={setTab} />
+      <DetailTabs tabs={tripTabs} value={tab} onChange={setTab} />
 
       <DetailLayout
         main={
+          tab === 'map' ? (
+            <Section
+              title="Live position"
+              action={
+                <span className="flex items-center gap-2 text-[12px]">
+                  <span
+                    className={cn(
+                      'size-2 rounded-full',
+                      liveStatus === 'live'
+                        ? 'animate-pulse bg-emerald-500'
+                        : liveStatus === 'connecting'
+                          ? 'bg-amber-500'
+                          : 'bg-muted-foreground/50',
+                    )}
+                  />
+                  <span className="text-muted-foreground">
+                    {liveStatus === 'live' ? 'Live' : liveStatus === 'connecting' ? 'Connecting…' : 'Offline'}
+                  </span>
+                </span>
+              }
+            >
+              {trackQuery.data ? (
+                <TripMap track={trackQuery.data} live={livePosition} className="h-[560px] w-full" />
+              ) : (
+                <Skeleton className="h-[560px] w-full rounded-none" />
+              )}
+            </Section>
+          ) : (
           <>
             <Section
               title="Trip details"
@@ -197,8 +276,12 @@ export function TripDetailPage() {
               <ActivityFeed items={activity} />
             </Section>
           </>
+          )
         }
         rail={
+          tab === 'map' ? (
+            <RailCard title="Tracking" hint={liveStatus} items={trackingItems} />
+          ) : (
           <RailCard
             title="Linked records"
             items={[
@@ -207,6 +290,7 @@ export function TripDetailPage() {
               { label: 'Truck', value: trip.truckPlate ?? '—' },
             ]}
           />
+          )
         }
       />
 

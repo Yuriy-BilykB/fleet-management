@@ -10,6 +10,7 @@ import { ConfirmDelete } from '@/components/common/confirm-delete'
 import { DataTable, type Columns } from '@/components/common/data-table'
 import { ShipmentFormSheet } from '@/components/shipments/shipment-form-sheet'
 import { AssignSheet } from '@/components/shipments/assign-sheet'
+import { ShipmentStops } from '@/components/shipments/shipment-stops'
 import {
   ActivityFeed, DetailBreadcrumb, DetailHeader, DetailLayout, DetailTabs,
   FieldGrid, RailCard, Section,
@@ -266,6 +267,7 @@ export function ShipmentDetailPage() {
                 >
                   <FieldGrid fields={fields} />
                 </Section>
+                <ShipmentStops shipmentId={shipment.id} />
                 <Section title="Activity">
                   <ActivityFeed items={activity} />
                 </Section>

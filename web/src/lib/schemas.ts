@@ -64,6 +64,8 @@ export const shipmentSchema = z
     reference: z.string().min(1, 'Reference is required').max(32),
     originAddress: z.string().min(1, 'Origin is required').max(400),
     destinationAddress: z.string().min(1, 'Destination is required').max(400),
+    originLocationId: z.uuid('Pick an origin city').nullable(),
+    destinationLocationId: z.uuid('Pick a destination city').nullable(),
     cargoDescription: z.string().min(1, 'Describe the cargo').max(1000),
     weightKg: z.number().min(0).max(100000),
     price: z.number().min(0).nullable(),

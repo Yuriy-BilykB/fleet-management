@@ -14,5 +14,8 @@ public interface IShipmentService
     Task<ServiceResult<ShipmentResponse>> UpdateAsync(Guid id, ShipmentRequest request, CancellationToken ct);
     Task<ServiceResult<TripResponse>> AssignAsync(Guid id, AssignShipmentRequest request, CancellationToken ct);
     Task<ServiceResult<IReadOnlyList<TripResponse>>> GetTripsAsync(Guid id, CancellationToken ct);
+    Task<ServiceResult<IReadOnlyList<ShipmentStopResponse>>> GetStopsAsync(Guid id, CancellationToken ct);
+    Task<ServiceResult<ShipmentStopResponse>> AddStopAsync(Guid id, ShipmentStopRequest request, CancellationToken ct);
+    Task<ServiceResult> RemoveStopAsync(Guid id, Guid stopId, CancellationToken ct);
     Task<ServiceResult> DeleteAsync(Guid id, CancellationToken ct);
 }

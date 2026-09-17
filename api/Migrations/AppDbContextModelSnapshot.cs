@@ -252,6 +252,81 @@ namespace FleetManagement.Api.Migrations
                     b.ToTable("Drivers");
                 });
 
+            modelBuilder.Entity("FleetManagement.Api.Domain.Location", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CountryCode")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<double>("Latitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("Longitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name", "CountryCode")
+                        .IsUnique();
+
+                    b.ToTable("Locations");
+                });
+
+            modelBuilder.Entity("FleetManagement.Api.Domain.RoadRoute", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<decimal>("DistanceKm")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<int>("DurationMinutes")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Geometry")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("RouteKey")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RouteKey")
+                        .IsUnique();
+
+                    b.ToTable("Routes");
+                });
+
             modelBuilder.Entity("FleetManagement.Api.Domain.Shipment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -287,6 +362,9 @@ namespace FleetManagement.Api.Migrations
                         .HasMaxLength(400)
                         .HasColumnType("character varying(400)");
 
+                    b.Property<Guid?>("DestinationLocationId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Notes")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
@@ -295,6 +373,9 @@ namespace FleetManagement.Api.Migrations
                         .IsRequired()
                         .HasMaxLength(400)
                         .HasColumnType("character varying(400)");
+
+                    b.Property<Guid?>("OriginLocationId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("PickupDate")
                         .HasColumnType("timestamp with time zone");
@@ -321,6 +402,10 @@ namespace FleetManagement.Api.Migrations
 
                     b.HasIndex("CustomerId");
 
+                    b.HasIndex("DestinationLocationId");
+
+                    b.HasIndex("OriginLocationId");
+
                     b.HasIndex("PickupDate");
 
                     b.HasIndex("Status");
@@ -329,6 +414,40 @@ namespace FleetManagement.Api.Migrations
                         .IsUnique();
 
                     b.ToTable("Shipments");
+                });
+
+            modelBuilder.Entity("FleetManagement.Api.Domain.ShipmentStop", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid>("LocationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(400)
+                        .HasColumnType("character varying(400)");
+
+                    b.Property<int>("Sequence")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("ShipmentId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LocationId");
+
+                    b.HasIndex("ShipmentId", "Sequence")
+                        .IsUnique();
+
+                    b.ToTable("ShipmentStops");
                 });
 
             modelBuilder.Entity("FleetManagement.Api.Domain.Trip", b =>
@@ -405,6 +524,10 @@ namespace FleetManagement.Api.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("now()");
 
+                    b.Property<string>("ExternalId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
                     b.Property<DateOnly?>("InspectionExpiry")
                         .HasColumnType("date");
 
@@ -453,6 +576,50 @@ namespace FleetManagement.Api.Migrations
                         .IsUnique();
 
                     b.ToTable("Trucks");
+                });
+
+            modelBuilder.Entity("FleetManagement.Api.Domain.TruckPosition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<double?>("HeadingDeg")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("Latitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("Longitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("OdometerKm")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTimeOffset>("RecordedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<double?>("SpeedKmh")
+                        .HasColumnType("double precision");
+
+                    b.Property<Guid>("TruckId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TruckId", "RecordedAt");
+
+                    b.HasIndex("TruckId", "RecordedAt", "Source")
+                        .IsUnique();
+
+                    b.ToTable("TruckPositions");
                 });
 
             modelBuilder.Entity("FleetManagement.Api.Domain.TruckService", b =>
@@ -579,9 +746,42 @@ namespace FleetManagement.Api.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("FleetManagement.Api.Domain.Location", "DestinationLocation")
+                        .WithMany("DestinationShipments")
+                        .HasForeignKey("DestinationLocationId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("FleetManagement.Api.Domain.Location", "OriginLocation")
+                        .WithMany("OriginShipments")
+                        .HasForeignKey("OriginLocationId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Company");
 
                     b.Navigation("Customer");
+
+                    b.Navigation("DestinationLocation");
+
+                    b.Navigation("OriginLocation");
+                });
+
+            modelBuilder.Entity("FleetManagement.Api.Domain.ShipmentStop", b =>
+                {
+                    b.HasOne("FleetManagement.Api.Domain.Location", "Location")
+                        .WithMany()
+                        .HasForeignKey("LocationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("FleetManagement.Api.Domain.Shipment", "Shipment")
+                        .WithMany("Stops")
+                        .HasForeignKey("ShipmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Location");
+
+                    b.Navigation("Shipment");
                 });
 
             modelBuilder.Entity("FleetManagement.Api.Domain.Trip", b =>
@@ -622,6 +822,17 @@ namespace FleetManagement.Api.Migrations
                     b.Navigation("Company");
                 });
 
+            modelBuilder.Entity("FleetManagement.Api.Domain.TruckPosition", b =>
+                {
+                    b.HasOne("FleetManagement.Api.Domain.Truck", "Truck")
+                        .WithMany("Positions")
+                        .HasForeignKey("TruckId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Truck");
+                });
+
             modelBuilder.Entity("FleetManagement.Api.Domain.TruckService", b =>
                 {
                     b.HasOne("FleetManagement.Api.Domain.Truck", "Truck")
@@ -656,9 +867,18 @@ namespace FleetManagement.Api.Migrations
                     b.Navigation("Trips");
                 });
 
+            modelBuilder.Entity("FleetManagement.Api.Domain.Location", b =>
+                {
+                    b.Navigation("DestinationShipments");
+
+                    b.Navigation("OriginShipments");
+                });
+
             modelBuilder.Entity("FleetManagement.Api.Domain.Shipment", b =>
                 {
                     b.Navigation("Documents");
+
+                    b.Navigation("Stops");
 
                     b.Navigation("Trips");
                 });
@@ -668,6 +888,8 @@ namespace FleetManagement.Api.Migrations
                     b.Navigation("AssignedDrivers");
 
                     b.Navigation("Documents");
+
+                    b.Navigation("Positions");
 
                     b.Navigation("Services");
 

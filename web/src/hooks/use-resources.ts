@@ -2,8 +2,8 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { createCrudHooks } from '@/hooks/use-crud'
 import type {
-  Company, Customer, Dashboard, DocumentRecord, Driver, ServiceSpendPoint, Shipment,
-  Trip, Truck, TruckServiceRecord,
+  Company, Customer, Dashboard, DocumentRecord, Driver, Location, ServiceSpendPoint,
+  Shipment, Trip, TripTrack, Truck, TruckServiceRecord,
 } from '@/types/api'
 
 export const companies = createCrudHooks<Company, CompanyBody>('companies')
@@ -14,12 +14,22 @@ export const shipments = createCrudHooks<Shipment, ShipmentBody>('shipments')
 export const trips = createCrudHooks<Trip, TripBody>('trips')
 export const truckServices = createCrudHooks<TruckServiceRecord, TruckServiceBody>('truck-services')
 export const documents = createCrudHooks<DocumentRecord, DocumentBody>('documents')
+export const locations = createCrudHooks<Location, LocationBody>('locations')
 
 export function useDashboard(companyId: string | null) {
   return useQuery({
     queryKey: ['dashboard', companyId],
     queryFn: ({ signal }) => api.get<Dashboard>('/dashboard', { params: { companyId }, signal }),
     enabled: Boolean(companyId),
+  })
+}
+
+/** Planned route plus the positions recorded so far for one trip. */
+export function useTripTrack(tripId: string | undefined) {
+  return useQuery({
+    queryKey: ['trips', 'track', tripId],
+    queryFn: ({ signal }) => api.get<TripTrack>(`/trips/${tripId}/track`, { signal }),
+    enabled: Boolean(tripId),
   })
 }
 
@@ -66,7 +76,9 @@ export type CustomerBody = {
 
 export type ShipmentBody = {
   companyId: string; customerId: string; reference: string; originAddress: string
-  destinationAddress: string; cargoDescription: string; weightKg: number
+  destinationAddress: string
+  originLocationId: string | null; destinationLocationId: string | null
+  cargoDescription: string; weightKg: number
   price: number | null; currency: string; pickupDate: string
   deliveryDate: string | null; status: string; notes: string | null
 }
@@ -75,6 +87,10 @@ export type TripBody = {
   shipmentId: string; driverId: string; truckId: string
   startedAt: string | null; completedAt: string | null
   distanceKm: number | null; fuelCost: number | null; status: string; notes: string | null
+}
+
+export type LocationBody = {
+  name: string; countryCode: string; latitude: number; longitude: number
 }
 
 export type DocumentBody = {

@@ -46,6 +46,23 @@ public class ShipmentsController(IShipmentService service) : ApiControllerBase
     public async Task<IActionResult> GetShipmentTrips(Guid id, CancellationToken ct)
         => FromResult(await service.GetTripsAsync(id, ct));
 
+    /// <summary>Intermediate waypoints between origin and destination, in route order.</summary>
+    [HttpGet("{id:guid}/stops")]
+    public async Task<IActionResult> GetShipmentStops(Guid id, CancellationToken ct)
+        => FromResult(await service.GetStopsAsync(id, ct));
+
+    [HttpPost("{id:guid}/stops")]
+    public async Task<IActionResult> AddShipmentStop(
+        Guid id, [FromBody] ShipmentStopRequest request, CancellationToken ct)
+    {
+        var result = await service.AddStopAsync(id, request, ct);
+        return FromCreated(result, $"/api/shipments/{id}/stops");
+    }
+
+    [HttpDelete("{id:guid}/stops/{stopId:guid}")]
+    public async Task<IActionResult> RemoveShipmentStop(Guid id, Guid stopId, CancellationToken ct)
+        => FromResult(await service.RemoveStopAsync(id, stopId, ct));
+
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteShipment(Guid id, CancellationToken ct)
         => FromResult(await service.DeleteAsync(id, ct));

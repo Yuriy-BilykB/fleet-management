@@ -132,7 +132,7 @@ export function DashboardPage() {
         title="Service spend"
         description={`Maintenance and repair cost per month, last ${MONTHS_SHOWN} months.`}
       >
-        <SpendTrend data={spend} currency="UAH" />
+        <SpendTrend data={spend} currency="EUR" />
       </ChartCard>
 
       <div className="grid gap-4 lg:grid-cols-2">

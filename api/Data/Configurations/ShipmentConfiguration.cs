@@ -28,6 +28,16 @@ public class ShipmentConfiguration : IEntityTypeConfiguration<Shipment>
             .HasForeignKey(x => x.CompanyId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.HasOne(x => x.OriginLocation)
+            .WithMany(x => x.OriginShipments)
+            .HasForeignKey(x => x.OriginLocationId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.HasOne(x => x.DestinationLocation)
+            .WithMany(x => x.DestinationShipments)
+            .HasForeignKey(x => x.DestinationLocationId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         builder.HasOne(x => x.Customer)
             .WithMany(x => x.Shipments)
             .HasForeignKey(x => x.CustomerId)

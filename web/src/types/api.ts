@@ -42,6 +42,7 @@ export type Truck = {
   make: string
   model: string
   vin: string | null
+  externalId: string | null
   year: number | null
   capacityKg: number
   odometerKm: number
@@ -91,6 +92,10 @@ export type Shipment = {
   reference: string
   originAddress: string
   destinationAddress: string
+  originLocationId: string | null
+  destinationLocationId: string | null
+  originLocationName: string | null
+  destinationLocationName: string | null
   cargoDescription: string
   weightKg: number
   price: number | null
@@ -153,6 +158,66 @@ export type ServiceSpendPoint = {
   /** "yyyy-MM" */
   month: string
   total: number
+}
+
+export type Location = {
+  id: string
+  name: string
+  countryCode: string
+  latitude: number
+  longitude: number
+}
+
+export type TruckPosition = {
+  id: string
+  truckId: string
+  latitude: number
+  longitude: number
+  speedKmh: number | null
+  headingDeg: number | null
+  odometerKm: number | null
+  /** "simulator" today, a telematics provider name once one is connected. */
+  source: string
+  recordedAt: string
+}
+
+export type ShipmentStop = {
+  id: string
+  shipmentId: string
+  locationId: string
+  locationName: string
+  countryCode: string
+  latitude: number
+  longitude: number
+  sequence: number
+  notes: string | null
+}
+
+export type TripStop = {
+  sequence: number
+  name: string
+  latitude: number
+  longitude: number
+}
+
+export type TripTrack = {
+  tripId: string
+  originLatitude: number | null
+  originLongitude: number | null
+  originName: string | null
+  destinationLatitude: number | null
+  destinationLongitude: number | null
+  destinationName: string | null
+  /** Road geometry as [latitude, longitude] pairs. */
+  routeGeometry: [number, number][]
+  routeDistanceKm: number | null
+  routeDurationMinutes: number | null
+  /** "openrouteservice" for a real road route, "straight-line" for the fallback. */
+  routeProvider: string | null
+  stops: TripStop[]
+  /** The truck to subscribe to for live fixes. */
+  truckId: string
+  positions: TruckPosition[]
 }
 
 export type Dashboard = {

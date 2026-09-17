@@ -63,7 +63,7 @@ public class DashboardService(AppDbContext db) : IDashboardService
             .ToListAsync(ct);
 
         var upcoming = await shipments
-            .Include(x => x.Customer)
+            .Include(x => x.Customer).Include(x => x.OriginLocation).Include(x => x.DestinationLocation)
             .Where(x => x.Status == ShipmentStatus.Scheduled || x.Status == ShipmentStatus.Draft)
             .OrderBy(x => x.PickupDate)
             .Take(10)

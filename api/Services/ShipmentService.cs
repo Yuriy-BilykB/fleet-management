@@ -12,7 +12,8 @@ public class ShipmentService(AppDbContext db) : IShipmentService
         Guid? companyId, Guid? customerId, ShipmentStatus? status, string? search,
         DateTimeOffset? pickupFrom, DateTimeOffset? pickupTo, int? page, int? pageSize, CancellationToken ct)
     {
-        var query = db.Shipments.AsNoTracking().Include(x => x.Customer).AsQueryable();
+        var query = db.Shipments.AsNoTracking().Include(x => x.Customer)
+            .Include(x => x.OriginLocation).Include(x => x.DestinationLocation).AsQueryable();
 
         if (companyId is not null) query = query.Where(x => x.CompanyId == companyId);
         if (customerId is not null) query = query.Where(x => x.CustomerId == customerId);
@@ -33,6 +34,7 @@ public class ShipmentService(AppDbContext db) : IShipmentService
     public async Task<ServiceResult<ShipmentResponse>> GetByIdAsync(Guid id, CancellationToken ct)
     {
         var entity = await db.Shipments.AsNoTracking().Include(x => x.Customer)
+            .Include(x => x.OriginLocation).Include(x => x.DestinationLocation)
             .FirstOrDefaultAsync(x => x.Id == id, ct);
         return entity is null
             ? ServiceResult<ShipmentResponse>.NotFound("Shipment", id)
@@ -53,6 +55,8 @@ public class ShipmentService(AppDbContext db) : IShipmentService
         if (!saved.IsSuccess) return ServiceResult<ShipmentResponse>.From(saved);
 
         await db.Entry(entity).Reference(x => x.Customer).LoadAsync(ct);
+        await db.Entry(entity).Reference(x => x.OriginLocation).LoadAsync(ct);
+        await db.Entry(entity).Reference(x => x.DestinationLocation).LoadAsync(ct);
         return ServiceResult<ShipmentResponse>.Success(ShipmentResponse.From(entity));
     }
 
@@ -72,6 +76,8 @@ public class ShipmentService(AppDbContext db) : IShipmentService
         if (!saved.IsSuccess) return ServiceResult<ShipmentResponse>.From(saved);
 
         await db.Entry(entity).Reference(x => x.Customer).LoadAsync(ct);
+        await db.Entry(entity).Reference(x => x.OriginLocation).LoadAsync(ct);
+        await db.Entry(entity).Reference(x => x.DestinationLocation).LoadAsync(ct);
         return ServiceResult<ShipmentResponse>.Success(ShipmentResponse.From(entity));
     }
 
@@ -138,6 +144,64 @@ public class ShipmentService(AppDbContext db) : IShipmentService
             trips.Select(TripResponse.From).ToList());
     }
 
+    public async Task<ServiceResult<IReadOnlyList<ShipmentStopResponse>>> GetStopsAsync(
+        Guid id, CancellationToken ct)
+    {
+        if (!await db.Shipments.AnyAsync(x => x.Id == id, ct))
+            return ServiceResult<IReadOnlyList<ShipmentStopResponse>>.NotFound("Shipment", id);
+
+        var stops = await db.ShipmentStops.AsNoTracking()
+            .Include(x => x.Location)
+            .Where(x => x.ShipmentId == id)
+            .OrderBy(x => x.Sequence)
+            .ToListAsync(ct);
+
+        return ServiceResult<IReadOnlyList<ShipmentStopResponse>>.Success(
+            stops.Select(ShipmentStopResponse.From).ToList());
+    }
+
+    public async Task<ServiceResult<ShipmentStopResponse>> AddStopAsync(
+        Guid id, ShipmentStopRequest request, CancellationToken ct)
+    {
+        if (!await db.Shipments.AnyAsync(x => x.Id == id, ct))
+            return ServiceResult<ShipmentStopResponse>.NotFound("Shipment", id);
+
+        if (!await db.Locations.AnyAsync(x => x.Id == request.LocationId, ct))
+            return ServiceResult<ShipmentStopResponse>.Invalid($"Location '{request.LocationId}' does not exist.");
+
+        // Appending is the common case, so a caller may leave Sequence at 0.
+        var sequence = request.Sequence > 0
+            ? request.Sequence
+            : await db.ShipmentStops.Where(x => x.ShipmentId == id)
+                .Select(x => (int?)x.Sequence).MaxAsync(ct) is { } max ? max + 1 : 1;
+
+        var entity = new ShipmentStop
+        {
+            ShipmentId = id,
+            LocationId = request.LocationId,
+            Sequence = sequence,
+            Notes = request.Notes
+        };
+
+        db.ShipmentStops.Add(entity);
+
+        var saved = await db.TrySaveAsync(ct);
+        if (!saved.IsSuccess) return ServiceResult<ShipmentStopResponse>.From(saved);
+
+        await db.Entry(entity).Reference(x => x.Location).LoadAsync(ct);
+        return ServiceResult<ShipmentStopResponse>.Success(ShipmentStopResponse.From(entity));
+    }
+
+    public async Task<ServiceResult> RemoveStopAsync(Guid id, Guid stopId, CancellationToken ct)
+    {
+        var entity = await db.ShipmentStops.FirstOrDefaultAsync(
+            x => x.Id == stopId && x.ShipmentId == id, ct);
+        if (entity is null) return ServiceResult.NotFound("ShipmentStop", stopId);
+
+        db.ShipmentStops.Remove(entity);
+        return await db.TrySaveAsync(ct);
+    }
+
     public async Task<ServiceResult> DeleteAsync(Guid id, CancellationToken ct)
     {
         var entity = await db.Shipments.FirstOrDefaultAsync(x => x.Id == id, ct);
@@ -171,6 +235,8 @@ public class ShipmentService(AppDbContext db) : IShipmentService
         entity.Reference = request.Reference;
         entity.OriginAddress = request.OriginAddress;
         entity.DestinationAddress = request.DestinationAddress;
+        entity.OriginLocationId = request.OriginLocationId;
+        entity.DestinationLocationId = request.DestinationLocationId;
         entity.CargoDescription = request.CargoDescription;
         entity.WeightKg = request.WeightKg;
         entity.Price = request.Price;

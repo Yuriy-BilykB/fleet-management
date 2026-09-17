@@ -1,5 +1,5 @@
-const dateFormatter = new Intl.DateTimeFormat('uk-UA', { day: '2-digit', month: '2-digit', year: 'numeric' })
-const dateTimeFormatter = new Intl.DateTimeFormat('uk-UA', {
+const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
+const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', {
   day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
 })
 
@@ -13,16 +13,16 @@ export function formatDateTime(value: string | null | undefined): string {
   return dateTimeFormatter.format(new Date(value))
 }
 
-export function formatMoney(value: number | null | undefined, currency = 'UAH'): string {
+export function formatMoney(value: number | null | undefined, currency = 'EUR'): string {
   if (value === null || value === undefined) return '—'
-  return new Intl.NumberFormat('uk-UA', {
+  return new Intl.NumberFormat('en-GB', {
     style: 'currency', currency, maximumFractionDigits: 0,
   }).format(value)
 }
 
 export function formatNumber(value: number | null | undefined, suffix = ''): string {
   if (value === null || value === undefined) return '—'
-  return new Intl.NumberFormat('uk-UA').format(value) + suffix
+  return new Intl.NumberFormat('en-GB').format(value) + suffix
 }
 
 /** Splits a PascalCase enum name into words: "InTransit" -> "In Transit". */

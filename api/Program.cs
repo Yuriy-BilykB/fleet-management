@@ -1,5 +1,8 @@
 using System.Text.Json.Serialization;
 using FleetManagement.Api.Data;
+using FleetManagement.Api.Hubs;
+using FleetManagement.Api.Routing;
+using Microsoft.Extensions.Options;
 using FleetManagement.Api.Services;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,12 +32,34 @@ builder.Services.AddScoped<ITripService, TripService>();
 builder.Services.AddScoped<IMaintenanceService, MaintenanceService>();
 builder.Services.AddScoped<IDocumentService, DocumentService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<ILocationService, LocationService>();
+builder.Services.AddScoped<ITripTrackingService, TripTrackingService>();
+builder.Services.AddScoped<IRoutingService, RoutingService>();
+
+// Road routing. Without an API key the provider reports itself unconfigured and
+// callers fall back to straight lines, so the app still runs.
+builder.Services.Configure<RoutingOptions>(builder.Configuration.GetSection(RoutingOptions.Section));
+builder.Services.AddHttpClient<IRouteProvider, OpenRouteServiceProvider>((sp, client) =>
+{
+    var options = sp.GetRequiredService<IOptions<RoutingOptions>>().Value;
+    client.BaseAddress = new Uri(options.BaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(20);
+    // ORS sends a bare token, not "Bearer x" — the typed Authorization header
+    // parser rejects that, so bypass validation.
+    if (options.IsConfigured)
+        client.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", options.ApiKey);
+});
+
+// Live truck positions.
+builder.Services.AddSignalR();
+builder.Services.AddHostedService<TripSimulator>();
 
 builder.Services.AddCors(options =>
     options.AddPolicy(CorsPolicy, policy => policy
         .WithOrigins(builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? [])
         .AllowAnyHeader()
-        .AllowAnyMethod()));
+        .AllowAnyMethod()
+        .AllowCredentials()));
 
 var app = builder.Build();
 
@@ -65,5 +90,6 @@ app.MapGet("/health", async (AppDbContext db, CancellationToken ct) =>
 });
 
 app.MapControllers();
+app.MapHub<TripTrackingHub>("/hubs/trips");
 
 app.Run();

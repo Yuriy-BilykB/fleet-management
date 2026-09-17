@@ -10,6 +10,7 @@ public class TruckConfiguration : IEntityTypeConfiguration<Truck>
     {
         builder.Property(x => x.PlateNumber).HasMaxLength(16).IsRequired();
         builder.Property(x => x.Vin).HasMaxLength(32);
+        builder.Property(x => x.ExternalId).HasMaxLength(128);
         builder.Property(x => x.Make).HasMaxLength(64).IsRequired();
         builder.Property(x => x.Model).HasMaxLength(64).IsRequired();
         builder.Property(x => x.CapacityKg).HasPrecision(10, 2);
